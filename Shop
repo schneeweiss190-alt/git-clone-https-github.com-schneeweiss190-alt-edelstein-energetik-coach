@@ -1,0 +1,35 @@
+// functions/woocommerceSync.js
+import fetch from "node-fetch";
+import * as admin from "firebase-admin";
+
+const BASE = process.env.WC_BASE; // https://deine-domain.ch
+const KEY  = process.env.WC_KEY;
+const SEC  = process.env.WC_SECRET;
+
+export async function syncWooProducts() {
+  const db = admin.firestore();
+  for (let page=1; page<=20; page++) {
+    const url = `${BASE}/wp-json/wc/v3/products?per_page=100&page=${page}&consumer_key=${KEY}&consumer_secret=${SEC}`;
+    const res = await fetch(url);
+    if (res.status === 400) break; // keine weiteren Seiten
+    const items = await res.json();
+    if (!Array.isArray(items) || items.length === 0) break;
+
+    for (const p of items) {
+      const price = Number(p.price ?? p.regular_price ?? 0);
+      const image = p.images?.[0]?.src;
+      await db.collection('products').doc(String(p.id)).set({
+        title: p.name,
+        sku: p.sku ?? String(p.id),
+        price, currency: 'CHF',
+        images: image ? [image] : [],
+        purchaseUrl: p.permalink,
+        isActive: p.status === 'publish',
+        stoneRefs: [],
+        themeRefs: [],
+        updatedAt: Date.now(),
+      }, { merge: true });
+    }
+  }
+}
+
