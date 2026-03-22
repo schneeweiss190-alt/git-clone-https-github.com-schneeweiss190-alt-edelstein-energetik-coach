@@ -27,4 +27,5 @@ Dieses Grundgerüst ist vollständig auf **Deutsch** und enthält:
    ```bash
    flutter pub add firebase_core firebase_auth cloud_firestore firebase_storage
    flutterfire configure
-
+flutter pub add google_mlkit_image_labeling image_picker
+flutter run
